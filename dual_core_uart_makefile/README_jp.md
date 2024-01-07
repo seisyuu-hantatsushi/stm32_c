@@ -150,35 +150,32 @@
      (gdb) 
      ```
    2. gdbにてCortex-M7側を起動
-     Cortex-M4側での`reset init`にてCortex-M7も`reset init`される
-     ```
-     (gdb) c
-     Continuing.
-     [stm32h7x.cpu1] external resume detected
-     [stm32h7x.cpu1] not halted
-     [stm32h7x.cpu1] context restore failed, aborting resume
-     target stm32h7x.cpu1 was not halted when resume was requested
-
-     Program received signal SIGINT, Interrupt.
-     0x08003316 in HAL_GetTick () at ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c:340
-     340	  return uwTick;
-     (gdb)
-     ``` 
-   3. gdbにてCortex-M4側を再開
-　　　```
-     (gdb) c
-     Continuing.
-     [stm32h7x.cpu1] not halted
-     [stm32h7x.cpu1] context restore failed, aborting resume
-     target stm32h7x.cpu1 was not halted when resume was requested
-     ^C
-     Program received signal SIGINT, Interrupt.
-     0x08102076 in HAL_GetTick () at ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c:340
-     340	  return uwTick;
-     (gdb)
-     ```
-     ```
-
-
+      Cortex-M4側での`reset init`にてCortex-M7も`reset init`される
+      ```
+      (gdb) c
+      Continuing.
+      [stm32h7x.cpu1] external resume detected
+      [stm32h7x.cpu1] not halted
+      [stm32h7x.cpu1] context restore failed, aborting resume
+      target stm32h7x.cpu1 was not halted when resume was requested
+      
+      Program received signal SIGINT, Interrupt.
+      0x08003316 in HAL_GetTick () at ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c:340
+      340	  return uwTick;
+      (gdb)
+      ``` 
+   3. gdbにてCortex-M4側を再開  
+      ```
+      (gdb) c
+      Continuing.
+      [stm32h7x.cpu1] not halted
+      [stm32h7x.cpu1] context restore failed, aborting resume
+      target stm32h7x.cpu1 was not halted when resume was requested
+      ^C
+      Program received signal SIGINT, Interrupt.
+      0x08102076 in HAL_GetTick () at ../../Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c:340
+      340	  return uwTick;
+      (gdb)
+      ```
 ## 参考
 [Debugging Initialization Code of Multi-Core STM32H7 Devices](https://visualgdb.com/tutorials/arm/stm32/multicore/startup/)
