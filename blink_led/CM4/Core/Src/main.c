@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,7 +92,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  LED_Init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN SysInit */
@@ -106,11 +106,15 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+      bool bBlink = true;
+      while (1) {
+	  /* USER CODE END WHILE */
+	  LED_Blink(LED2_PORT, bBlink);
+	  bBlink = !bBlink;
+	  HAL_Delay(900);
+	  /* USER CODE BEGIN 3 */
+      }
   }
   /* USER CODE END 3 */
 }

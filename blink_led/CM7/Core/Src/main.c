@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -127,16 +127,20 @@ Error_Handler();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
-
+  LED_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+      bool bBlink = true;
+      while(1) {
+	  /* USER CODE END WHILE */
+	  LED_Blink(LED1_PORT, bBlink);
+	  bBlink = !bBlink;
+	  HAL_Delay(1000);
+	  /* USER CODE BEGIN 3 */
+      }
   }
   /* USER CODE END 3 */
 }
