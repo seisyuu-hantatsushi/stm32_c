@@ -177,5 +177,11 @@
       340	  return uwTick;
       (gdb)
       ```
+## 起動シーケンス概要
+1. Cortex-M4側が起動後Hardware Semaphoreを初期化し,Cortex-M7側の初期待ち
+2. Cortex-M7側が起動し,Hardware関連を初期化し,Hardware Semaphoreを取得,開放して,Cortex-M4側のWFEを解除
+3. Cortex-M4側がHardware関連を初期化.
+4. 両コアがMain Loopへ.
+
 ## 参考
 [Debugging Initialization Code of Multi-Core STM32H7 Devices](https://visualgdb.com/tutorials/arm/stm32/multicore/startup/)
