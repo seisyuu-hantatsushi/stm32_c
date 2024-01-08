@@ -27,7 +27,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef StaticEventGroup_t osStaticEventGroupDef_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -36,6 +36,8 @@
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
+
+#define EVENT_TIM5 (0x00000001)
 
 /* USER CODE END PD */
 
@@ -58,7 +60,14 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-
+/* Definitions for intrEvent */
+osEventFlagsId_t intrEventHandle;
+osStaticEventGroupDef_t intrEventControlBlock;
+const osEventFlagsAttr_t intrEvent_attributes = {
+  .name = "intrEvent",
+  .cb_mem = &intrEventControlBlock,
+  .cb_size = sizeof(intrEventControlBlock),
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,7 +82,7 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+typedef StaticEventGroup_t osStaticEventGroupDef_t;
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +116,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  LED_Init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN SysInit */
@@ -119,7 +127,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-
+  LED_Init();
+  HAL_TIM_Base_Start_IT(&htim5);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -151,6 +160,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+  /* Create the event(s) */
+  /* creation of intrEvent */
+  intrEventHandle = osEventFlagsNew(&intrEvent_attributes);
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -159,14 +171,10 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  {
-      bool bBlink = true;
-      while (1) {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-      }
+  while (1) {
   }
+  /* USER CODE END WHILE */
+  /* USER CODE BEGIN 3 */
   /* USER CODE END 3 */
 }
 
@@ -293,13 +301,19 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END 5 */
+    /* USER CODE BEGIN 5 */
+    bool bBlink = true;
+    /* Infinite loop */
+    for(;;){
+	uint32_t flags;
+
+	flags = osEventFlagsWait(intrEventHandle, EVENT_TIM5, osFlagsWaitAny, osWaitForever);
+	if(flags & EVENT_TIM5){
+	    LED_Blink(LED2_PORT, bBlink);
+	    bBlink = !bBlink;
+	}
+    }
+    /* USER CODE END 5 */
 }
 
 /**
@@ -319,7 +333,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  if (htim->Instance == TIM5){
+      static uint32_t counter = 0;
+      if(counter >= 10){
+	  osEventFlagsSet(intrEventHandle, EVENT_TIM5);
+	  counter = 0;
+      }
+      counter++;
+  }
   /* USER CODE END Callback 1 */
 }
 
