@@ -39,7 +39,8 @@ typedef StaticEventGroup_t osStaticEventGroupDef_t;
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
-#define EVENT_TIMER (0x00000001UL)
+#define EVENT_TIMER      (0x00000001UL)
+#define EVENT_UART3_RECV (0x00000002UL)
 
 /* USER CODE END PD */
 
@@ -71,6 +72,17 @@ const osEventFlagsAttr_t intrEvent_attributes = {
   .cb_size = sizeof(intrEventControlBlock),
 };
 /* USER CODE BEGIN PV */
+#define UART3_BUF_SIZE (256)
+struct UartContext {
+    struct {
+	uint8_t c;
+	uint8_t buffer[UART3_BUF_SIZE];
+	uint32_t head;
+	uint32_t tail;
+    } recv;
+};
+
+struct UartContext uart3Context = {};
 
 /* USER CODE END PV */
 
@@ -88,7 +100,23 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+    if(huart->Instance == USART3){
+	uint32_t nextTail = uart3Context.recv.tail+1;
+	if(nextTail >= sizeof(uart3Context.recv.buffer)){
+	    nextTail = 0;
+	}
+	if(uart3Context.recv.head != nextTail){
+	    osEventFlagsSet(intrEventHandle, EVENT_UART3_RECV);
+	    uart3Context.recv.buffer[uart3Context.recv.tail] = uart3Context.recv.c;
+	    uart3Context.recv.tail++;
+	    if(uart3Context.recv.tail >= sizeof(uart3Context.recv.buffer)){
+		uart3Context.recv.tail = 0;
+	    }
+	}
+	HAL_UART_Receive_IT(&huart3, &uart3Context.recv.c, 1);
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -428,6 +456,9 @@ void StartDefaultTask(void *argument)
 {
     bool bBlink = true;
     /* USER CODE BEGIN 5 */
+    HAL_UART_Transmit(&huart3, "test\r\n", 6, 1000);
+    HAL_UART_Receive_IT(&huart3, &uart3Context.recv.c, 1);
+
     /* Infinite loop */
     for(;;){
 	uint32_t flags;
@@ -436,6 +467,23 @@ void StartDefaultTask(void *argument)
 	if(flags & EVENT_TIMER){
 	    LED_Blink(LED1_PORT, bBlink);
 	    bBlink = !bBlink;
+	}
+	if(flags & EVENT_UART3_RECV){
+	    uint8_t buffer[257] = { '\0' };
+	    uint32_t i,length = 0;
+	    while(uart3Context.recv.head != uart3Context.recv.tail){
+		buffer[length] = uart3Context.recv.buffer[uart3Context.recv.head];
+		if(buffer[length] == '\r'){
+		    length++;
+		    buffer[length] = '\n';
+		}
+		length++;
+		uart3Context.recv.head++;
+		if(uart3Context.recv.head >= sizeof(uart3Context.recv.buffer)){
+		    uart3Context.recv.head = 0;
+		}
+	    }
+	    HAL_UART_Transmit(&huart3, &buffer[0], length, 1000);
 	}
     }
   /* USER CODE END 5 */
