@@ -38,6 +38,7 @@ typedef StaticEventGroup_t osStaticEventGroupDef_t;
 #endif
 
 #define EVENT_TIM5 (0x00000001)
+#define EVENT_UART2_RECV (0x00000002UL)
 
 /* USER CODE END PD */
 
@@ -68,6 +69,19 @@ const osEventFlagsAttr_t intrEvent_attributes = {
   .cb_mem = &intrEventControlBlock,
   .cb_size = sizeof(intrEventControlBlock),
 };
+
+#define UART2_BUF_SIZE (256)
+struct UartContext {
+    struct {
+	uint8_t c;
+	uint8_t buffer[UART2_BUF_SIZE];
+	uint32_t head;
+	uint32_t tail;
+    } recv;
+};
+
+struct UartContext uart2Context = {};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,6 +97,24 @@ void StartDefaultTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 typedef StaticEventGroup_t osStaticEventGroupDef_t;
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+    if(huart->Instance == USART2){
+	uint32_t nextTail = uart2Context.recv.tail+1;
+	if(nextTail >= sizeof(uart2Context.recv.buffer)){
+	    nextTail = 0;
+	}
+	if(uart2Context.recv.head != nextTail){
+	    osEventFlagsSet(intrEventHandle, EVENT_UART2_RECV);
+	    uart2Context.recv.buffer[uart2Context.recv.tail] = uart2Context.recv.c;
+	    uart2Context.recv.tail++;
+	    if(uart2Context.recv.tail >= sizeof(uart2Context.recv.buffer)){
+		uart2Context.recv.tail = 0;
+	    }
+	}
+	HAL_UART_Receive_IT(&huart2, &uart2Context.recv.c, 1);
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -303,6 +335,9 @@ void StartDefaultTask(void *argument)
 {
     /* USER CODE BEGIN 5 */
     bool bBlink = true;
+
+    HAL_UART_Transmit(&huart2, "test\r\n", 6, 1000);
+    HAL_UART_Receive_IT(&huart2, &uart2Context.recv.c, 1);
     /* Infinite loop */
     for(;;){
 	uint32_t flags;
@@ -311,6 +346,23 @@ void StartDefaultTask(void *argument)
 	if(flags & EVENT_TIM5){
 	    LED_Blink(LED2_PORT, bBlink);
 	    bBlink = !bBlink;
+	}
+	if(flags & EVENT_UART2_RECV){
+	    uint8_t buffer[257] = { '\0' };
+	    uint32_t i,length = 0;
+	    while(uart2Context.recv.head != uart2Context.recv.tail){
+		buffer[length] = uart2Context.recv.buffer[uart2Context.recv.head];
+		if(buffer[length] == '\r'){
+		    length++;
+		    buffer[length] = '\n';
+		}
+		length++;
+		uart2Context.recv.head++;
+		if(uart2Context.recv.head >= sizeof(uart2Context.recv.buffer)){
+		    uart2Context.recv.head = 0;
+		}
+	    }
+	    HAL_UART_Transmit(&huart2, &buffer[0], length, 1000);
 	}
     }
     /* USER CODE END 5 */
